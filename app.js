@@ -10,11 +10,13 @@ const availableEl = document.querySelector("#availableContracts");
 const progressEl = document.querySelector("#progressContracts");
 const historyEl = document.querySelector("#historyContracts");
 const toast = document.querySelector("#toast");
+const syncStatus = document.querySelector("#syncStatus");
 
 function seedContracts() { return [{ id: crypto.randomUUID(), title: "Performance Parts Run", item: "Steel", amount: 180, payout: 8500, hours: 24, notes: "Deliver clean, ready-to-use stock to the main workshop.", status: "available", createdAt: Date.now() }, { id: crypto.randomUUID(), title: "Garage Restock", item: "Aluminum", amount: 120, payout: 6200, hours: 18, notes: "Priority restock for the fabrication bay.", status: "available", createdAt: Date.now() }]; }
 function loadContracts() { try { const saved = JSON.parse(localStorage.getItem(contractsKey)); return Array.isArray(saved) ? saved : seedContracts(); } catch { return seedContracts(); } }
-function saveContracts() { localStorage.setItem(contractsKey, JSON.stringify(contracts)); fetch(contractsApi, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(contracts) }).catch(() => {}); }
-async function refreshSharedContracts() { try { const response = await fetch(contractsApi, { cache: "no-store" }); if (!response.ok) return; const shared = await response.json(); if (!Array.isArray(shared)) return; const before = JSON.stringify(contracts); contracts = shared; if (JSON.stringify(shared) !== before) render(); } catch {} }
+function setSyncStatus(connected) { syncStatus.classList.toggle("is-offline", !connected); syncStatus.innerHTML = `<span></span> ${connected ? "Shared board connected" : "Shared sync unavailable"}`; }
+function saveContracts() { localStorage.setItem(contractsKey, JSON.stringify(contracts)); fetch(contractsApi, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(contracts) }).then(response => setSyncStatus(response.ok)).catch(() => setSyncStatus(false)); }
+async function refreshSharedContracts() { try { const response = await fetch(contractsApi, { cache: "no-store" }); if (!response.ok) throw new Error("Shared function unavailable"); const shared = await response.json(); if (!Array.isArray(shared)) throw new Error("Invalid shared data"); const before = JSON.stringify(contracts); contracts = shared; setSyncStatus(true); if (JSON.stringify(shared) !== before) render(); } catch { setSyncStatus(false); } }
 function money(value) { return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value); }
 function duration(ms) { const total = Math.max(0, Math.floor(ms / 1000)); return `${Math.floor(total / 3600)}h ${String(Math.floor((total % 3600) / 60)).padStart(2, "0")}m ${String(total % 60).padStart(2, "0")}s`; }
 function deadline(contract) { return contract.acceptedAt + contract.hours * 3600000; }
