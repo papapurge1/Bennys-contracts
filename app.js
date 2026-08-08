@@ -1,0 +1,52 @@
+const contractsKey = "bennys-contract-board";
+const webhookKey = "bennys-discord-webhook";
+const nameKey = "bennys-contract-name";
+const contractsApi = "/.netlify/functions/contracts";
+const managerPassword = "2319";
+let managerUnlocked = false;
+let contracts = loadContracts();
+
+const availableEl = document.querySelector("#availableContracts");
+const progressEl = document.querySelector("#progressContracts");
+const historyEl = document.querySelector("#historyContracts");
+const toast = document.querySelector("#toast");
+
+function seedContracts() { return [{ id: crypto.randomUUID(), title: "Performance Parts Run", item: "Steel", amount: 180, payout: 8500, hours: 24, notes: "Deliver clean, ready-to-use stock to the main workshop.", status: "available", createdAt: Date.now() }, { id: crypto.randomUUID(), title: "Garage Restock", item: "Aluminum", amount: 120, payout: 6200, hours: 18, notes: "Priority restock for the fabrication bay.", status: "available", createdAt: Date.now() }]; }
+function loadContracts() { try { const saved = JSON.parse(localStorage.getItem(contractsKey)); return Array.isArray(saved) ? saved : seedContracts(); } catch { return seedContracts(); } }
+function saveContracts() { localStorage.setItem(contractsKey, JSON.stringify(contracts)); fetch(contractsApi, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(contracts) }).catch(() => {}); }
+async function refreshSharedContracts() { try { const response = await fetch(contractsApi, { cache: "no-store" }); if (!response.ok) return; const shared = await response.json(); if (!Array.isArray(shared)) return; const before = JSON.stringify(contracts); contracts = shared; if (JSON.stringify(shared) !== before) render(); } catch {} }
+function money(value) { return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value); }
+function duration(ms) { const total = Math.max(0, Math.floor(ms / 1000)); return `${Math.floor(total / 3600)}h ${String(Math.floor((total % 3600) / 60)).padStart(2, "0")}m ${String(total % 60).padStart(2, "0")}s`; }
+function deadline(contract) { return contract.acceptedAt + contract.hours * 3600000; }
+function escapeHtml(value) { const div = document.createElement("div"); div.textContent = value || ""; return div.innerHTML; }
+function empty() { return document.querySelector("#emptyState").content.cloneNode(true); }
+function showToast(message) { toast.textContent = message; toast.classList.add("show"); setTimeout(() => toast.classList.remove("show"), 3500); }
+
+function card(contract, type) {
+  const isProgress = type === "progress";
+  const left = isProgress ? deadline(contract) - Date.now() : 0;
+  const expired = isProgress && left <= 0;
+  const percent = isProgress ? Math.min(100, Math.max(0, ((Date.now() - contract.acceptedAt) / (contract.hours * 3600000)) * 100)) : 0;
+  return `<article class="contract-card ${expired ? "is-overdue" : ""}"><div class="contract-top"><span class="job-tag">${isProgress ? (expired ? "Overdue" : "Active contract") : "Open contract"}</span><strong>${money(contract.payout)}</strong></div><h3>${escapeHtml(contract.title)}</h3><p class="requirement"><span>Required</span>${contract.amount.toLocaleString()} × ${escapeHtml(contract.item)}</p>${contract.notes ? `<p class="notes">${escapeHtml(contract.notes)}</p>` : ""}${isProgress ? `<p class="accepted-by">Accepted by <strong>${escapeHtml(contract.acceptedBy || "Unknown")}</strong></p><div class="timer"><div><span>Time remaining</span><strong>${expired ? "Time expired" : duration(left)}</strong></div><div class="progress-track"><i style="width:${percent}%"></i></div><small>Due ${new Date(deadline(contract)).toLocaleString()}</small></div><div class="card-actions"><button class="primary-button finish-button" data-finish="${contract.id}" type="button">Mark Finished Early</button>${managerUnlocked ? `<button class="delete-button" data-delete="${contract.id}" type="button">Delete</button>` : ""}</div>` : `<div class="contract-meta"><span>Time: ${contract.hours} hour${contract.hours === 1 ? "" : "s"}</span><button class="primary-button accept-button" data-accept="${contract.id}" type="button">Accept Contract</button></div>${managerUnlocked ? `<button class="delete-button contract-delete" data-delete="${contract.id}" type="button">Delete Contract</button>` : ""}`}</article>`;
+}
+function render() {
+  const available = contracts.filter(c => c.status === "available"); const active = contracts.filter(c => c.status === "active"); const finished = contracts.filter(c => c.status === "finished" || c.status === "incomplete").sort((a,b) => b.closedAt - a.closedAt);
+  availableEl.replaceChildren(); available.length ? availableEl.innerHTML = available.map(c => card(c, "available")).join("") : availableEl.append(empty());
+  progressEl.replaceChildren(); active.length ? progressEl.innerHTML = active.map(c => card(c, "progress")).join("") : progressEl.append(empty());
+  historyEl.replaceChildren(); finished.length ? historyEl.innerHTML = finished.map(c => `<article class="history-item"><div><span class="status ${c.status}">${c.status === "finished" ? "Finished" : "Incomplete"}</span><h3>${escapeHtml(c.title)}</h3><p>${c.amount.toLocaleString()} × ${escapeHtml(c.item)} · ${money(c.payout)} payout</p></div><div class="history-date"><strong>${new Date(c.closedAt).toLocaleDateString()}</strong><span>${c.status === "finished" ? "Completed early / on time" : "Expired before completion"}</span>${managerUnlocked ? `<button class="delete-button" data-delete="${c.id}" type="button">Delete</button>` : ""}</div></article>`).join("") : historyEl.append(empty());
+  document.querySelector("#availableCount").textContent = available.length; document.querySelector("#progressCount").textContent = active.length;
+}
+async function accept(id, acceptedBy) { const contract = contracts.find(c => c.id === id); if (!contract) return; contract.status = "active"; contract.acceptedAt = Date.now(); contract.acceptedBy = acceptedBy; saveContracts(); render(); showToast("Contract accepted. The timer is now running."); try { const response = await fetch("/.netlify/functions/notify-contract", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...contract, dueAt: new Date(deadline(contract)).toLocaleString() }) }); if (!response.ok) throw new Error("Webhook unavailable"); showToast("Contract accepted and Discord notified."); } catch { showToast("Contract accepted. Configure DISCORD_WEBHOOK_URL in Netlify to enable the Discord alert."); } }
+function finish(id, incomplete = false) { const c = contracts.find(c => c.id === id); if (!c) return; c.status = incomplete ? "incomplete" : "finished"; c.closedAt = Date.now(); saveContracts(); render(); showToast(incomplete ? "Contract moved to incomplete history." : "Contract marked finished and moved to history."); }
+function activateView(view) { document.querySelectorAll(".tab").forEach(x => x.classList.toggle("is-active", x.dataset.view === view)); document.querySelectorAll(".view").forEach(x => x.classList.toggle("is-active", x.id === `${view}View`)); }
+
+document.addEventListener("click", event => { const tab = event.target.closest(".tab"); if (tab) { if (tab.dataset.view === "manager" && !managerUnlocked) { document.querySelector("#managerLock").showModal(); document.querySelector("#managerPassword").focus(); return; } activateView(tab.dataset.view); } const acceptButton = event.target.closest("[data-accept]"); if (acceptButton) { document.querySelector("#acceptForm").dataset.contractId = acceptButton.dataset.accept; document.querySelector("#acceptLock").showModal(); document.querySelector("#acceptName").focus(); } const finishButton = event.target.closest("[data-finish]"); if (finishButton) finish(finishButton.dataset.finish); const deleteButton = event.target.closest("[data-delete]"); if (deleteButton && managerUnlocked) { contracts = contracts.filter(c => c.id !== deleteButton.dataset.delete); saveContracts(); render(); showToast("Contract deleted."); } });
+document.querySelector("#managerUnlockForm").addEventListener("submit", event => { event.preventDefault(); const input = document.querySelector("#managerPassword"); if (event.submitter?.value === "cancel") return document.querySelector("#managerLock").close(); if (input.value !== managerPassword) { document.querySelector("#passwordError").textContent = "That password is not correct."; input.select(); return; } managerUnlocked = true; document.querySelector("#managerLock").close(); input.value = ""; activateView("manager"); render(); showToast("Manager console unlocked."); });
+document.querySelector("#acceptForm").addEventListener("submit", event => { event.preventDefault(); const form = event.currentTarget; const input = document.querySelector("#acceptName"); if (event.submitter?.value === "cancel") return document.querySelector("#acceptLock").close(); if (!input.value.trim()) { document.querySelector("#acceptError").textContent = "Please enter your name."; return input.focus(); } const name = input.value.trim(); localStorage.setItem(nameKey, name); document.querySelector("#acceptLock").close(); document.querySelector("#acceptError").textContent = ""; accept(form.dataset.contractId, name); });
+document.querySelector("#contractForm").addEventListener("submit", event => { event.preventDefault(); const f = event.currentTarget; contracts.unshift({ id: crypto.randomUUID(), title: f.contractTitle.value.trim(), item: f.contractItem.value.trim(), amount: Number(f.contractAmount.value), payout: Number(f.contractPayout.value), hours: Number(f.contractHours.value), notes: f.contractNotes.value.trim(), status: "available", createdAt: Date.now() }); saveContracts(); f.reset(); render(); showToast("New contract posted to the job board."); });
+document.querySelector("#clearHistory").addEventListener("click", () => { contracts = contracts.filter(c => c.status === "available" || c.status === "active"); saveContracts(); render(); showToast("Contract history cleared."); });
+document.querySelector("#acceptName").value = localStorage.getItem(nameKey) || "";
+setInterval(() => { let changed = false; contracts.filter(c => c.status === "active" && deadline(c) <= Date.now()).forEach(c => { c.status = "incomplete"; c.closedAt = Date.now(); changed = true; }); if (changed) saveContracts(); render(); }, 1000);
+setInterval(refreshSharedContracts, 5000);
+render();
+refreshSharedContracts();

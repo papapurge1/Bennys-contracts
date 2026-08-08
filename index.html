@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BENNY's Original Motor Works | Contracts</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="page-overlay"></div>
+    <main class="shell">
+      <header class="app-header">
+        <div class="brand-copy">
+          <p class="eyebrow">BENNY's Original Motor Works</p>
+          <h1>Contract Board</h1>
+          <p class="subtitle">Claim the job. Deliver the work. Get paid.</p>
+        </div>
+        <div class="live-pill"><span></span> Live Operations</div>
+      </header>
+
+      <nav class="tabs" aria-label="Contract sections">
+        <button class="tab is-active" data-view="home" type="button">Available Contracts <span id="availableCount">0</span></button>
+        <button class="tab" data-view="progress" type="button">In Progress <span id="progressCount">0</span></button>
+        <button class="tab" data-view="manager" type="button">Manager</button>
+        <button class="tab" data-view="history" type="button">History</button>
+      </nav>
+
+      <section class="view is-active" id="homeView">
+        <div class="section-heading">
+          <div><p class="eyebrow">Job Board</p><h2>Available Contracts</h2></div>
+          <p>Review the requirements and accept a contract when you are ready to begin.</p>
+        </div>
+        <div class="contracts-grid" id="availableContracts"></div>
+      </section>
+
+      <section class="view" id="progressView">
+        <div class="section-heading">
+          <div><p class="eyebrow">Active Bay</p><h2>Contracts In Progress</h2></div>
+          <p>Your timer starts only when you accept a contract. Finish early whenever the work is done.</p>
+        </div>
+        <div class="contracts-grid" id="progressContracts"></div>
+      </section>
+
+      <section class="view" id="managerView">
+        <div class="manager-layout">
+          <form class="manager-card" id="contractForm">
+            <div class="section-heading compact"><div><p class="eyebrow">Manager Console</p><h2>Create a Contract</h2></div></div>
+            <label>Contract title<input id="contractTitle" required maxlength="56" placeholder="e.g. Fleet repair order" /></label>
+            <label>Item required<input id="contractItem" required maxlength="80" placeholder="e.g. Steel" /></label>
+            <div class="form-row">
+              <label>How much<input id="contractAmount" required min="1" step="1" type="number" placeholder="0" /></label>
+              <label>Payout ($)<input id="contractPayout" required min="0" step="1" type="number" placeholder="0" /></label>
+            </div>
+            <label>Time to complete (hours)<input id="contractHours" required min="0.1" step="0.1" type="number" placeholder="e.g. 24" /></label>
+            <label>Extra instructions <textarea id="contractNotes" maxlength="300" placeholder="Optional notes for the mechanic..."></textarea></label>
+            <button class="primary-button" type="submit">Post Contract</button>
+          </form>
+          <aside class="webhook-card">
+            <p class="eyebrow">Discord Automation</p><h2>Acceptance Webhook</h2>
+            <p>When a contract is accepted, the secure Netlify function sends a notification to Discord.</p>
+            <p class="hint">Set <strong>DISCORD_WEBHOOK_URL</strong> in Netlify: Project configuration → Environment variables. Do not paste your private webhook URL into the website.</p>
+          </aside>
+        </div>
+      </section>
+
+      <section class="view" id="historyView">
+        <div class="section-heading"><div><p class="eyebrow">Records</p><h2>Completed & Incomplete</h2></div><button class="text-button" id="clearHistory" type="button">Clear history</button></div>
+        <div class="history-list" id="historyContracts"></div>
+      </section>
+    </main>
+
+    <dialog class="manager-lock" id="managerLock">
+      <form method="dialog" id="managerUnlockForm">
+        <button class="dialog-close" value="cancel" aria-label="Close" type="submit">×</button>
+        <p class="eyebrow">Restricted Access</p>
+        <h2>Manager Login</h2>
+        <p>Enter the manager password to create and manage contracts.</p>
+        <label>Manager password<input id="managerPassword" type="password" inputmode="numeric" autocomplete="off" required /></label>
+        <p class="password-error" id="passwordError" aria-live="polite"></p>
+        <button class="primary-button" type="submit">Unlock Manager</button>
+      </form>
+    </dialog>
+
+    <dialog class="manager-lock" id="acceptLock">
+      <form method="dialog" id="acceptForm">
+        <button class="dialog-close" value="cancel" aria-label="Close" type="submit">×</button>
+        <p class="eyebrow">Contract Assignment</p>
+        <h2>Who is accepting?</h2>
+        <p>Enter your name before the contract timer starts.</p>
+        <label>Your name<input id="acceptName" type="text" maxlength="50" autocomplete="name" required placeholder="Your name" /></label>
+        <p class="password-error" id="acceptError" aria-live="polite"></p>
+        <button class="primary-button" type="submit">Accept Contract</button>
+      </form>
+    </dialog>
+
+    <template id="emptyState"><div class="empty-state"><strong>No contracts here yet.</strong><span>Check another section or have a manager post a new job.</span></div></template>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="app.js"></script>
+  </body>
+</html>
