@@ -37,3 +37,10 @@ document.querySelector("#contractForm").addEventListener("submit", async () => {
   const response = await sendDirectWebhook(message, "post");
   if (!response.ok) showToast(`Contract posted. New-contract Discord alert failed: ${response.error}`);
 });
+
+document.addEventListener("click", event => {
+  const button = event.target.closest("[data-material-jump]");
+  if (!button) return;
+  const group = document.querySelector(`#${button.dataset.materialJump}`);
+  if (group) group.scrollIntoView({ behavior: "smooth", block: "start" });
+});
