@@ -52,20 +52,34 @@
               <label>How much<input id="contractAmount" required min="1" step="1" type="number" placeholder="0" /></label>
               <label>Payout ($)<input id="contractPayout" required min="0" step="1" type="number" placeholder="0" /></label>
             </div>
-            <label>Time to complete (hours)<input id="contractHours" required min="0.1" step="0.1" type="number" placeholder="e.g. 24" /></label>
+            <div class="form-row">
+              <label>Time to complete<input id="contractDuration" required min="1" step="1" type="number" placeholder="e.g. 24" /></label>
+              <label>Time unit<select id="contractDurationUnit"><option value="seconds">Seconds</option><option value="hours" selected>Hours</option><option value="days">Days</option></select></label>
+            </div>
             <label>Extra instructions <textarea id="contractNotes" maxlength="300" placeholder="Optional notes for the mechanic..."></textarea></label>
             <button class="primary-button" type="submit">Post Contract</button>
           </form>
           <aside class="webhook-card">
-            <p class="eyebrow">Discord Automation</p><h2>Acceptance Webhook</h2>
-            <p>When a contract is accepted, the secure Netlify function sends a notification to Discord.</p>
-            <p class="hint">Set <strong>DISCORD_WEBHOOK_URL</strong> in Netlify: Project configuration → Environment variables. Do not paste your private webhook URL into the website.</p>
+            <p class="eyebrow">Discord Automation</p><h2>Direct Acceptance Webhook</h2>
+            <p>When a contract is accepted, the accepter’s browser sends the Discord alert directly.</p>
+            <label>Accepted-contract webhook URL<input id="directAcceptWebhookUrl" type="url" placeholder="https://discord.com/api/webhooks/..." /></label>
+            <button class="secondary-button" id="saveAcceptWebhook" type="button">Save Acceptance Webhook</button>
+            <label>Completed-work-order webhook URL<input id="directCompleteWebhookUrl" type="url" placeholder="https://discord.com/api/webhooks/..." /></label>
+            <button class="secondary-button" id="saveCompleteWebhook" type="button">Save Completion Webhook</button>
+            <p class="hint">This is intentionally shared with the board so every user can alert Discord. Anyone with access to the site can view this URL.</p>
+            <div class="webhook-tests"><button class="secondary-button" id="testAcceptWebhook" type="button">Test Acceptance Webhook</button><button class="secondary-button" id="testCompleteWebhook" type="button">Test Completion Webhook</button></div>
+            <p class="hint" id="webhookTestResult" aria-live="polite"></p>
           </aside>
         </div>
       </section>
 
       <section class="view" id="historyView">
         <div class="section-heading"><div><p class="eyebrow">Records</p><h2>Completed & Incomplete</h2></div><button class="text-button" id="clearHistory" type="button">Clear history</button></div>
+        <section class="weekly-summary" aria-label="This week's completed-contract summary">
+          <div class="summary-heading"><div><p class="eyebrow">Monday–Sunday</p><h3>Materials & Payouts</h3></div><div class="week-controls"><button class="secondary-button" id="previousWeek" type="button">← Previous</button><span id="weekRange"></span><button class="secondary-button" id="nextWeek" type="button">Next →</button></div></div>
+          <div class="summary-totals"><div><span>Total materials bought</span><strong id="weeklyMaterials">0</strong></div><div><span>Total spent</span><strong id="weeklySpent">$0</strong></div><div><span>Paid out</span><strong id="weeklyPaid">$0</strong></div></div>
+          <div class="week-timeline" id="weekTimeline"></div>
+        </section>
         <div class="history-list" id="historyContracts"></div>
       </section>
     </main>
