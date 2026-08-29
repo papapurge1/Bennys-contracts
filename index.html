@@ -68,6 +68,8 @@
             <button class="secondary-button" id="saveCompleteWebhook" type="button">Save Completion Webhook</button>
             <label>New-contract webhook URL<input id="directPostWebhookUrl" type="url" placeholder="https://discord.com/api/webhooks/..." /></label>
             <button class="secondary-button" id="savePostWebhook" type="button">Save New Contract Webhook</button>
+            <label>Role to ping for new contracts<input id="directPostRoleId" inputmode="numeric" maxlength="20" placeholder="Discord Role ID, e.g. 123456789012345678" /></label>
+            <button class="secondary-button" id="savePostRole" type="button">Save New Contract Role</button>
             <p class="hint">This is intentionally shared with the board so every user can alert Discord. Anyone with access to the site can view this URL.</p>
             <div class="webhook-tests"><button class="secondary-button" id="testAcceptWebhook" type="button">Test Acceptance Webhook</button><button class="secondary-button" id="testCompleteWebhook" type="button">Test Completion Webhook</button><button class="secondary-button" id="testPostWebhook" type="button">Test New Contract Webhook</button></div>
             <p class="hint" id="webhookTestResult" aria-live="polite"></p>
