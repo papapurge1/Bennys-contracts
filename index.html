@@ -10,7 +10,6 @@
     <div class="page-overlay"></div>
     <main class="shell">
       <header class="app-header">
-        <div class="header-kanji" aria-hidden="true">伝説</div>
         <div class="brand-copy">
           <p class="eyebrow">BENNY's Original Motor Works</p>
           <h1>Contract Board</h1>
@@ -67,8 +66,10 @@
             <button class="secondary-button" id="saveAcceptWebhook" type="button">Save Acceptance Webhook</button>
             <label>Completed-work-order webhook URL<input id="directCompleteWebhookUrl" type="url" placeholder="https://discord.com/api/webhooks/..." /></label>
             <button class="secondary-button" id="saveCompleteWebhook" type="button">Save Completion Webhook</button>
+            <label>New-contract webhook URL<input id="directPostWebhookUrl" type="url" placeholder="https://discord.com/api/webhooks/..." /></label>
+            <button class="secondary-button" id="savePostWebhook" type="button">Save New Contract Webhook</button>
             <p class="hint">This is intentionally shared with the board so every user can alert Discord. Anyone with access to the site can view this URL.</p>
-            <div class="webhook-tests"><button class="secondary-button" id="testAcceptWebhook" type="button">Test Acceptance Webhook</button><button class="secondary-button" id="testCompleteWebhook" type="button">Test Completion Webhook</button></div>
+            <div class="webhook-tests"><button class="secondary-button" id="testAcceptWebhook" type="button">Test Acceptance Webhook</button><button class="secondary-button" id="testCompleteWebhook" type="button">Test Completion Webhook</button><button class="secondary-button" id="testPostWebhook" type="button">Test New Contract Webhook</button></div>
             <p class="hint" id="webhookTestResult" aria-live="polite"></p>
           </aside>
         </div>
@@ -112,5 +113,6 @@
     <template id="emptyState"><div class="empty-state"><strong>No contracts here yet.</strong><span>Check another section or have a manager post a new job.</span></div></template>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="app.js"></script>
+    <script src="enhancements.js"></script>
   </body>
 </html>
