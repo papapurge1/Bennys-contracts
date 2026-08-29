@@ -76,20 +76,24 @@ document.querySelector("#testPostWebhook").addEventListener("click", async () =>
   result.textContent = response.ok ? "New Contract test sent." : `Test failed: ${response.error}`;
 });
 
-document.querySelector("#contractForm").addEventListener("submit", async () => {
-  const contract = contracts[0];
-  if (!contract || !directWebhookUrl("post")) return;
+document.querySelector("#contractForm").addEventListener("submit", event => {
+  const form = event.currentTarget;
+  const contract = {
+    title: form.contractTitle.value.trim(),
+    approvedBy: form.contractApprovedBy.value.trim(),
+    item: form.contractItem.value.trim(),
+    amount: Number(form.contractAmount.value),
+    payout: Number(form.contractPayout.value),
+    durationSeconds: Number(form.contractDuration.value) * unitSeconds[form.contractDurationUnit.value]
+  };
 
-  const saved = await saveContracts();
-  if (!saved.ok) {
-    showToast("Contract posted, but the shared board did not save the webhook alert.");
-    return;
-  }
-
-  const message = `**New Contract Posted**\n**${contract.title}** — ${contract.amount} × ${contract.item}\nApproved by: **${contract.approvedBy || "Manager"}**\nPayout: **${money(contract.payout)}**\nTime to complete: ${formatTime(seconds(contract))}`;
-  const response = await sendPostWebhook(message);
-  if (!response.ok) showToast(`Contract posted. New-contract Discord alert failed: ${response.error}`);
-});
+  setTimeout(async () => {
+    if (!directWebhookUrl("post")) return;
+    const message = `**New Contract Posted**\n**${contract.title}** — ${contract.amount} × ${contract.item}\nApproved by: **${contract.approvedBy || "Manager"}**\nPayout: **${money(contract.payout)}**\nTime to complete: ${formatTime(contract.durationSeconds)}`;
+    const response = await sendPostWebhook(message);
+    if (!response.ok) showToast(`Contract posted. New-contract Discord alert failed: ${response.error}`);
+  }, 0);
+}, true);
 
 document.addEventListener("click", event => {
   const button = event.target.closest("[data-material-jump]");
